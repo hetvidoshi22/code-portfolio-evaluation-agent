@@ -3,16 +3,16 @@ import streamlit as st
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-@st.cache_data(show_spinner=False)
-def evaluate_repo(repo_data):
-
+# Load environment variables
 load_dotenv()
 
+# Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 
+@st.cache_data(show_spinner=False)
 def evaluate_repo(repo_data):
 
     prompt = f"""
@@ -24,7 +24,7 @@ Description: {repo_data['description']}
 Language: {repo_data['language']}
 Stars: {repo_data['stars']}
 Forks: {repo_data['forks']}
-Key Files: {repo_data['files'][:10]}
+Files: {repo_data['files'][:10]}
 
 Rules:
 - Only suggest improvements that are NOT already present.
@@ -34,10 +34,10 @@ Rules:
 Return only:
 
 Strengths:
-- ...
+- bullet points
 
 Improvement Suggestions:
-- ...
+- bullet points
 """
 
     try:
