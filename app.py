@@ -38,6 +38,7 @@ if st.button("Analyze Portfolio"):
 
                 st.subheader("Portfolio Score")
                 st.success(f"{score}/100")
+                st.progress(score/100)
 
                 st.subheader("AI Insights")
 
