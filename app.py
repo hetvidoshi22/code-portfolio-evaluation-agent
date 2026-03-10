@@ -18,6 +18,8 @@ if st.button("Analyze Portfolio"):
         with st.spinner("Analyzing repository..."):
 
             repo_data = fetch_repo_data(repo_url)
+            score = calculate_score(repo_data)
+            insights = evaluate_repo(repo_data)
 
             if repo_data is None:
                 st.error("Could not fetch repository data.")

@@ -1,12 +1,16 @@
 import os
+import streamlit as st
 from dotenv import load_dotenv
 import google.generativeai as genai
+
+@st.cache_data(show_spinner=False)
+def evaluate_repo(repo_data):
 
 load_dotenv()
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel("gemini-flash-latest")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 
 def evaluate_repo(repo_data):
@@ -20,7 +24,7 @@ Description: {repo_data['description']}
 Language: {repo_data['language']}
 Stars: {repo_data['stars']}
 Forks: {repo_data['forks']}
-Files: {repo_data['files']}
+Key Files: {repo_data['files'][:10]}
 
 Rules:
 - Only suggest improvements that are NOT already present.
