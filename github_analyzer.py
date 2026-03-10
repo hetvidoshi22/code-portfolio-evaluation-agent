@@ -10,8 +10,8 @@ def fetch_repo_data(repo_url):
     repo_api = f"https://api.github.com/repos/{owner}/{repo}"
     contents_api = f"https://api.github.com/repos/{owner}/{repo}/contents"
 
-    repo_data = requests.get(repo_api).json()
-    contents = requests.get(contents_api).json()
+    repo_response = requests.get(repo_api, timeout=10)
+    contents_response = requests.get(contents_api, timeout=10)
 
     file_names = [file["name"].lower() for file in contents]
 

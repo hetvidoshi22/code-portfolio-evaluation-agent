@@ -3,6 +3,12 @@ from github_analyzer import fetch_repo_data
 from scoring import calculate_score
 from evaluator import evaluate_repo
 
+st.set_page_config(
+    page_title="Code Portfolio Evaluation Agent",
+    page_icon="🤖",
+    layout="centered"
+)
+
 st.title("Code Portfolio Evaluation Agent")
 
 st.write("Analyze GitHub repositories and receive portfolio insights.")
@@ -13,37 +19,40 @@ if st.button("Analyze Portfolio"):
 
     if not repo_url:
         st.warning("Please enter a GitHub repository URL.")
-    else:
+        st.stop()
 
-        with st.spinner("Analyzing repository..."):
+    with st.spinner("Analyzing repository..."):
 
-            repo_data = fetch_repo_data(repo_url)
-            score = calculate_score(repo_data)
-            insights = evaluate_repo(repo_data)
+        repo_data = fetch_repo_data(repo_url)
 
-            if repo_data is None:
-                st.error("Could not fetch repository data.")
-            else:
+        if repo_data is None:
+            st.error("Could not fetch repository data. Please check the repository URL.")
+            st.stop()
 
-                score = calculate_score(repo_data)
+        st.success("Repository data fetched successfully")
 
-                st.subheader("Repository Information")
+        score = calculate_score(repo_data)
 
-                st.json({
-                    "name": repo_data["name"],
-                    "description": repo_data["description"],
-                    "language": repo_data["language"],
-                    "stars": repo_data["stars"],
-                    "forks": repo_data["forks"],
-                    "size": repo_data["size"]
-                })
+        st.subheader("Repository Information")
 
-                st.subheader("Portfolio Score")
-                st.success(f"{score}/100")
-                st.progress(score/100)
+        st.json({
+            "name": repo_data["name"],
+            "description": repo_data["description"],
+            "language": repo_data["language"],
+            "stars": repo_data["stars"],
+            "forks": repo_data["forks"],
+            "size": repo_data["size"]
+        })
 
-                st.subheader("AI Insights")
+        st.subheader("Portfolio Score")
 
-                insights = evaluate_repo(repo_data)
+        st.progress(score / 100)
+        st.write(f"{score}/100")
 
-                st.write(insights)
+        st.subheader("AI Insights")
+
+        st.write("Generating AI insights...")
+
+        insights = evaluate_repo(repo_data)
+
+        st.write(insights)

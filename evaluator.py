@@ -24,7 +24,7 @@ Description: {repo_data['description']}
 Language: {repo_data['language']}
 Stars: {repo_data['stars']}
 Forks: {repo_data['forks']}
-Files: {repo_data['files'][:10]}
+Files: {repo_data['files'][:5]}
 
 Rules:
 - Only suggest improvements that are NOT already present.
@@ -41,7 +41,7 @@ Improvement Suggestions:
 """
 
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options={"timeout": 10})
         return response.text
     except Exception:
         return "AI insights could not be generated."
