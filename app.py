@@ -11,22 +11,36 @@ repo_url = st.text_input("Enter GitHub Repository URL")
 
 if st.button("Analyze Portfolio"):
 
-    repo_data = fetch_repo_data(repo_url)
-
-    if repo_data is None:
-        st.error("Could not fetch repository data.")
+    if not repo_url:
+        st.warning("Please enter a GitHub repository URL.")
     else:
 
-        score = calculate_score(repo_data)
+        with st.spinner("Analyzing repository..."):
 
-        st.subheader("Repository Information")
-        st.write(repo_data)
+            repo_data = fetch_repo_data(repo_url)
 
-        st.subheader("Portfolio Score")
-        st.write(f"{score}/100")
+            if repo_data is None:
+                st.error("Could not fetch repository data.")
+            else:
 
-        st.subheader("AI Insights")
+                score = calculate_score(repo_data)
 
-        insights = evaluate_repo(repo_data)
+                st.subheader("Repository Information")
 
-        st.write(insights)
+                st.json({
+                    "name": repo_data["name"],
+                    "description": repo_data["description"],
+                    "language": repo_data["language"],
+                    "stars": repo_data["stars"],
+                    "forks": repo_data["forks"],
+                    "size": repo_data["size"]
+                })
+
+                st.subheader("Portfolio Score")
+                st.success(f"{score}/100")
+
+                st.subheader("AI Insights")
+
+                insights = evaluate_repo(repo_data)
+
+                st.write(insights)

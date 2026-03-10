@@ -1,28 +1,39 @@
 import requests
 
-def parse_repo_url(repo_url):
-    parts = repo_url.rstrip("/").split("/")
-    owner = parts[-2]
-    repo = parts[-1]
-    return owner, repo
-
 
 def fetch_repo_data(repo_url):
-    owner, repo = parse_repo_url(repo_url)
 
-    url = f"https://api.github.com/repos/{owner}/{repo}"
-    response = requests.get(url)
+    try:
+        owner = repo_url.split("/")[-2]
+        repo = repo_url.split("/")[-1]
 
-    if response.status_code != 200:
+        repo_api = f"https://api.github.com/repos/{owner}/{repo}"
+        contents_api = f"https://api.github.com/repos/{owner}/{repo}/contents"
+
+        repo_response = requests.get(repo_api)
+
+        if repo_response.status_code != 200:
+            return None
+
+        repo_data = repo_response.json()
+
+        contents_response = requests.get(contents_api)
+
+        if contents_response.status_code != 200:
+            file_names = []
+        else:
+            contents = contents_response.json()
+            file_names = [file["name"].lower() for file in contents]
+
+        return {
+            "name": repo_data.get("name"),
+            "description": repo_data.get("description"),
+            "language": repo_data.get("language"),
+            "stars": repo_data.get("stargazers_count"),
+            "forks": repo_data.get("forks_count"),
+            "size": repo_data.get("size"),
+            "files": file_names
+        }
+
+    except Exception:
         return None
-
-    data = response.json()
-
-    return {
-        "name": data["name"],
-        "description": data["description"],
-        "language": data["language"],
-        "stars": data["stargazers_count"],
-        "forks": data["forks_count"],
-        "size": data["size"]
-    }
