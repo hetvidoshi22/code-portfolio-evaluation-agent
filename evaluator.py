@@ -42,11 +42,16 @@ def evaluate_repo(repo_data):
 
     # Format output
     result = "### Strengths\n"
+
     for s in strengths:
         result += f"- {s}\n"
 
     result += "\n### Improvement Suggestions\n"
-    for i in improvements:
-        result += f"- {i}\n"
+
+    if improvements:
+        for i in improvements:
+            result += f"- {i}\n"
+    else:
+        result += "- No major improvements detected. Repository follows good development practices.\n"
 
     return result

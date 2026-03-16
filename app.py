@@ -12,7 +12,7 @@ st.set_page_config(
 
 # Title
 st.title("Code Portfolio Evaluation Agent")
-
+st.caption("Agentic AI prototype for evaluating GitHub portfolios in hiring workflows.")
 st.write("Analyze GitHub repositories and receive portfolio insights.")
 
 # Initialize session state
