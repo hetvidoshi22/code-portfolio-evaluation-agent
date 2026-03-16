@@ -65,6 +65,23 @@ if st.button("Analyze Portfolio"):
     st.progress(score / 100)
     st.write(f"{score}/100")
 
+    # Portfolio verdict
+    if score >= 80:
+        verdict = "🟢 Strong Portfolio"
+        verdict_msg = "This repository demonstrates strong engineering practices and project quality."
+
+    elif score >= 60:
+        verdict = "🟡 Good Portfolio"
+        verdict_msg = "The project shows solid implementation but could benefit from further improvements."
+
+    else:
+        verdict = "🔴 Needs Improvement"
+        verdict_msg = "The repository requires additional documentation, structure, or features."
+
+    st.subheader("Portfolio Evaluation")
+    st.success(verdict)
+    st.write(verdict_msg)
+
     # AI insights
     st.subheader("AI Insights")
 
