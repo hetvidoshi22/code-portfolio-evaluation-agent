@@ -17,9 +17,9 @@ The **Code Portfolio Evaluation Agent** solves this by automatically analyzing r
 
 * GitHub repository analysis using GitHub API
 * Automated portfolio scoring based on repository signals
-* AI-generated insights using Gemini
-* Suggestions for improving project quality
-* Interactive Streamlit interface for quick evaluation
+* Strength and improvement insights for projects
+* Interactive dashboard for quick repository evaluation
+* Live deployed prototype for demonstration
 
 ---
 
@@ -28,15 +28,14 @@ The **Code Portfolio Evaluation Agent** solves this by automatically analyzing r
 * **Python**
 * **Streamlit**
 * **GitHub REST API**
-* **Google Gemini API**
-* **dotenv for secure API key handling**
-
+* **Python-dotenv**
+* **Requests**
 ---
 
 ## System Workflow
 
 <p align="center">
-  <img src="assets/agent_workflow.png" width="500">
+  <img src="assets/agent_workflow.png" width="350">
 </p>
 
 <p align="center">
@@ -46,29 +45,23 @@ Workflow of the Code Portfolio Evaluation Agent
 Steps:
 
 1. User submits a GitHub repository URL
-2. The system fetches repository metadata using the GitHub API
-3. Repository structure and signals are analyzed
-4. The AI agent evaluates the project using Gemini
-5. A portfolio score and improvement suggestions are generated
-6. Results are displayed on the dashboard
+2. GitHub API retrieves repository metadata
+3. Repository signals are analyzed (documentation, language, structure)
+4. The evaluation agent calculates a portfolio score
+4. Repository signals are analyzed (documentation, language, structure)
+4. The evaluation agent calculates a portfolio score
+5. Strengths and improvement suggestions are generated
+6. Results are displayed in the Streamlit dashboard
 
 ---
 
 ## Live Demo
 
-<p align="center">
-  <a href="https://YOUR-STREAMLIT-APP-LINK.streamlit.app" target="_blank">
-    <img src="https://img.shields.io/badge/Live%20Demo-Open%20App-2ea44f?style=for-the-badge">
-  </a>
-</p>
+You can test the **Code Portfolio Evaluation Agent** directly using the live demo.
 
-You can test the AI Portfolio Evaluation Agent directly using the live demo.
+### Open the App
 
-Example repository to try:
-
-```
-https://github.com/streamlit/streamlit
-```
+👉 https://code-portfolio-evaluation-agent.streamlit.app/
 
 ## Project Structure
 
@@ -102,16 +95,6 @@ Install dependencies:
 
 ```
 pip install -r requirements.txt
-```
-
----
-
-## Environment Setup
-
-Create a `.env` file in the project root.
-
-```
-GEMINI_API_KEY=your_api_key_here
 ```
 
 ---
