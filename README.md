@@ -35,7 +35,7 @@ The **Code Portfolio Evaluation Agent** solves this by automatically analyzing r
 ## System Workflow
 
 <p align="center">
-  <img src="assets/agent_workflow.png" width="350">
+  <img src="assets/agent_workflow.png" width="300">
 </p>
 
 <p align="center">
@@ -137,5 +137,3 @@ Output:
 * Add deeper code quality metrics
 * Detect testing frameworks and CI pipelines
 * Improve scoring model with more repository signals
-
----
