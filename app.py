@@ -15,13 +15,19 @@ st.title("Code Portfolio Evaluation Agent")
 
 st.write("Analyze GitHub repositories and receive portfolio insights.")
 
-# Input
-repo_url = st.text_input("Enter GitHub Repository URL")
+# Initialize session state
+if "repo_url" not in st.session_state:
+    st.session_state.repo_url = ""
 
-# Example repo button (helps reviewers test quickly)
+# Example repo button
 if st.button("Try Example Repository"):
-    repo_url = "https://github.com/streamlit/streamlit"
-    st.session_state.repo_url = repo_url
+    st.session_state.repo_url = "https://github.com/streamlit/streamlit"
+
+# Input field
+repo_url = st.text_input(
+    "Enter GitHub Repository URL",
+    value=st.session_state.repo_url
+)
 
 # Analyze button
 if st.button("Analyze Portfolio"):
@@ -39,10 +45,10 @@ if st.button("Analyze Portfolio"):
 
     st.success("Repository data fetched successfully")
 
-    # Calculate score
+    # Score calculation
     score = calculate_score(repo_data)
 
-    # Repository information
+    # Repo information
     st.subheader("Repository Information")
 
     st.json({
@@ -54,7 +60,7 @@ if st.button("Analyze Portfolio"):
         "size": repo_data["size"]
     })
 
-    # Score section
+    # Portfolio score
     st.subheader("Portfolio Score")
     st.progress(score / 100)
     st.write(f"{score}/100")
