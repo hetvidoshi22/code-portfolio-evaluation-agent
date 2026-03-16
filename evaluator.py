@@ -1,16 +1,13 @@
 import os
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
-# Get API key (works locally and on Streamlit Cloud)
 api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
     raise ValueError("Gemini API key not found")
 
-genai.configure(api_key=api_key)
-
-model = genai.GenerativeModel("gemini-2.0-flash")
+client = genai.Client(api_key=api_key)
 
 
 @st.cache_data(show_spinner=False)
@@ -42,9 +39,9 @@ Improvement Suggestions:
 """
 
     try:
-        response = model.generate_content(
-            prompt,
-            request_options={"timeout": 8}
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
         )
 
         return response.text
