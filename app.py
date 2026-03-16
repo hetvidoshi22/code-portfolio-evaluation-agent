@@ -5,8 +5,7 @@ from evaluator import evaluate_repo
 
 st.set_page_config(
     page_title="Code Portfolio Evaluation Agent",
-    page_icon="🤖",
-    layout="centered"
+    page_icon="🤖"
 )
 
 st.title("Code Portfolio Evaluation Agent")
@@ -21,38 +20,40 @@ if st.button("Analyze Portfolio"):
         st.warning("Please enter a GitHub repository URL.")
         st.stop()
 
-    with st.spinner("Analyzing repository..."):
+    with st.spinner("Fetching repository data..."):
 
         repo_data = fetch_repo_data(repo_url)
 
-        if repo_data is None:
-            st.error("Could not fetch repository data. Please check the repository URL.")
-            st.stop()
+    if repo_data is None:
+        st.error("Could not fetch repository data.")
+        st.stop()
 
-        st.success("Repository data fetched successfully")
+    st.success("Repository data fetched successfully")
 
-        score = calculate_score(repo_data)
+    score = calculate_score(repo_data)
 
-        st.subheader("Repository Information")
+    st.subheader("Repository Information")
 
-        st.json({
-            "name": repo_data["name"],
-            "description": repo_data["description"],
-            "language": repo_data["language"],
-            "stars": repo_data["stars"],
-            "forks": repo_data["forks"],
-            "size": repo_data["size"]
-        })
+    st.json({
+        "name": repo_data["name"],
+        "description": repo_data["description"],
+        "language": repo_data["language"],
+        "stars": repo_data["stars"],
+        "forks": repo_data["forks"],
+        "size": repo_data["size"]
+    })
 
-        st.subheader("Portfolio Score")
+    st.subheader("Portfolio Score")
 
-        st.progress(score / 100)
-        st.write(f"{score}/100")
+    st.progress(score / 100)
+    st.write(f"{score}/100")
 
-        st.subheader("AI Insights")
+    st.subheader("AI Insights")
 
-        st.write("Generating AI insights...")
+    if st.button("Generate AI Insights"):
 
-        insights = evaluate_repo(repo_data)
+        with st.spinner("Generating AI insights..."):
+
+            insights = evaluate_repo(repo_data)
 
         st.write(insights)

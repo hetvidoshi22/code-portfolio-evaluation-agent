@@ -3,11 +3,11 @@ import streamlit as st
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load environment variables
-load_dotenv()
+import streamlit as st
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+
+genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel("gemini-2.0-flash")
 
@@ -44,4 +44,4 @@ Improvement Suggestions:
         response = model.generate_content(prompt, request_options={"timeout": 10})
         return response.text
     except Exception:
-        return "AI insights could not be generated."
+        return "AI insights could not be generated. Please check API configuration."
