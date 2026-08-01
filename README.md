@@ -128,12 +128,3 @@ Output:
 * Portfolio Score
 * Strengths of the repository
 * Improvement suggestions
-
----
-
-## Future Improvements
-
-* Analyze multiple repositories from a GitHub profile
-* Add deeper code quality metrics
-* Detect testing frameworks and CI pipelines
-* Improve scoring model with more repository signals
