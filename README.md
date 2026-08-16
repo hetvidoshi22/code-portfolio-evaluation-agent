@@ -202,27 +202,6 @@ never reaches the browser.
 
 ---
 
-## Deployment (Vercel)
-
-1. Push the repository to GitHub.
-2. In Vercel, **Add New → Project** and import the repository.
-3. Leave the framework preset as **Next.js** and the root directory as the repository root.
-   `vercel.json` already routes `/api/*` to the Python function.
-4. Under **Settings → Environment Variables**, add `GITHUB_TOKEN` for all environments.
-5. Deploy.
-
-After the first deploy, check `https://<your-app>/api/health`. It should return
-`{"status":"ok","authenticated":true,...}` — if `authenticated` is `false`, the token was not
-picked up.
-
-**One thing to verify on the first deploy.** Vercel installs Python dependencies from
-`requirements.txt`. `api/requirements.txt` exists so the function bundle does not install
-Streamlit and its ~200 MB of transitive dependencies from the root file. If the build log
-shows Streamlit being installed, the function still works correctly — the shim means it is
-never imported — but the bundle is larger than it needs to be.
-
----
-
 ## Limitations
 
 * **Public repositories only.** Private repositories cannot be analyzed.
@@ -246,9 +225,3 @@ no user accounts, and no analytics are collected. The last five repositories you
 stored in your own browser's `localStorage` so you can return to them; that list never leaves
 your device and can be cleared by clearing site data.
 
----
-
-## License
-
-No license file is currently present in this repository. Add one to define how others may use
-this project — the analyzer will tell you the same thing.
