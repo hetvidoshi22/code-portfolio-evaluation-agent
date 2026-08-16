@@ -1,130 +1,254 @@
 # Code Portfolio Evaluation Agent
 
-An AI-powered system that analyzes GitHub repository and generates portfolio insights to help evaluate technical candidates.
-The agent automatically inspects repository structure, technologies used, documentation presence, and project complexity, then produces a **portfolio score and improvement recommendations**.
+Score any public GitHub repository against eight engineering signals and get a clear,
+explainable breakdown of every point.
+
+Paste a repository URL, and the app reads the repository through GitHub's public REST API,
+checks documentation, licensing, testing structure, project size, language detection and
+community activity, and returns a score out of 100 alongside the exact evidence behind each
+criterion.
+
+**The scoring is deterministic and rule-based. There is no AI model involved** — the same
+repository always produces the same score, and every point is traceable to a published rule.
 
 ---
 
-## Problem
+## What it does
 
-Many technical candidates include GitHub repositories in their profiles, but recruiters often do not have the time or technical expertise to evaluate multiple repositories manually. This can lead to inconsistent evaluation and strong candidates being overlooked.
+* Accepts any public `github.com` repository URL, including `.git` suffixes, deep links and
+  `owner/repo` shorthand
+* Fetches repository metadata and root contents from the GitHub REST API
+* Applies eight fixed scoring rules totalling exactly 100 points
+* Shows a per-criterion breakdown with the specific file or signal that was found or missing
+* Lists concrete strengths and improvement suggestions
+* Handles invalid URLs, missing repositories, private repositories, rate limits and network
+  failures with a specific message for each — and never produces a score from data it could
+  not reliably retrieve
 
-The **Code Portfolio Evaluation Agent** solves this by automatically analyzing repositories and converting technical signals into structured insights.
+## What it does not do
 
----
-
-## Features
-
-* GitHub repository analysis using GitHub API
-* Automated portfolio scoring based on repository signals
-* Strength and improvement insights for projects
-* Interactive dashboard for quick repository evaluation
-* Live deployed prototype for demonstration
-
----
-
-## Tech Stack
-
-* **Python**
-* **Streamlit**
-* **GitHub REST API**
-* **Python-dotenv**
-* **Requests**
----
-
-## System Workflow
-
-<p align="center">
-  <img src="assets/agent_workflow.png" width="300">
-</p>
-
-<p align="center">
-Workflow of the Code Portfolio Evaluation Agent
-</p>
-
-Steps:
-
-1. User submits a GitHub repository URL
-2. GitHub API retrieves repository metadata
-3. Repository signals are analyzed (documentation, language, structure)
-4. The evaluation agent calculates a portfolio score
-4. Repository signals are analyzed (documentation, language, structure)
-4. The evaluation agent calculates a portfolio score
-5. Strengths and improvement suggestions are generated
-6. Results are displayed in the Streamlit dashboard
+It reads repository *metadata*, not source code. It does not assess code quality,
+architecture or engineering ability, and it is not a substitute for a technical interview.
+Treat it as a fast, consistent first-pass filter and an actionable checklist.
 
 ---
 
-## Live Demo
+## Scoring criteria
 
-You can test the **Code Portfolio Evaluation Agent** directly using the live demo.
+| Criterion               | What earns the points                                                     | Points |
+| ----------------------- | ------------------------------------------------------------------------- | -----: |
+| Documentation           | A README in the repository root (`.md`, `.rst`, `.txt` or no extension)   |     20 |
+| Project size            | More than 100 KB of source                                                |     20 |
+| Primary language        | GitHub can identify a primary programming language                        |     15 |
+| License                 | A `LICENSE`, `LICENCE` or `COPYING` file, or a license GitHub recognises  |     10 |
+| Version control hygiene | A `.gitignore` file                                                       |     10 |
+| Testing                 | A `tests/`, `test/`, `spec/` or `__tests__/` directory, or a test config  |     10 |
+| Community interest      | At least one star                                                         |     10 |
+| Collaboration           | At least one fork                                                         |      5 |
+| **Maximum**             |                                                                           |**100** |
 
-### Open the App
+Verdict tiers: **80+** Strong Portfolio · **60–79** Good Portfolio · **below 60** Needs
+Improvement. Every point value is a multiple of 5, so both tier edges are exactly attainable.
 
-👉 https://code-portfolio-evaluation-agent.streamlit.app/
+---
 
-## Project Structure
+## Architecture
+
+`scoring.py` is the single source of truth for the score. Nothing else computes one.
 
 ```
-code-portfolio-evaluation-agent
+                       ┌───────────────────────────────┐
+ Browser ── /analyze ─▶│  Next.js (src/)               │
+                       │  homepage · analyzer · results│
+                       └───────────────┬───────────────┘
+                                       │ GET /api/analyze?url=…
+                       ┌───────────────▼───────────────┐
+                       │  api/index.py   FastAPI       │
+                       │  api/_github.py fetch+detect  │
+                       │  api/_criteria.py breakdown   │
+                       │  api/_core.py   streamlit shim│
+                       └───────────────┬───────────────┘
+                                       │ imports, unmodified
+                       ┌───────────────▼───────────────┐
+                       │  scoring.py    the score      │
+                       │  evaluator.py  the insights   │
+                       └───────────────────────────────┘
+```
+
+Three design decisions worth knowing:
+
+**Detection improved without touching the scorer.** `scoring.py` looks for literal tokens
+(`"readme.md"`, `"license"`, …). `api/_github.py` resolves real repository entries —
+`README.rst`, `LICENSE.md`, `COPYING`, `tests/` — into those tokens before scoring. That is
+how `README.rst` earns documentation points while the scoring rules stay byte-identical.
+
+**The breakdown cannot drift from the score.** `api/_criteria.py` restates each rule
+declaratively so it can be labelled and displayed, then checks its own total against the real
+`calculate_score()` on every call. If they ever disagree it raises rather than showing a
+breakdown that does not add up. `tests/test_criteria.py` proves agreement across all 256
+signal combinations.
+
+**Streamlit is stubbed, not installed.** `github_analyzer.py` and `evaluator.py` import
+Streamlit only for `@st.cache_data`. `api/_core.py` registers a stub module before importing
+them, so the serverless bundle skips ~200 MB of pandas/numpy/pyarrow.
+
+The original Streamlit app still runs unchanged — see *Running the Streamlit app* below.
+
+---
+
+## Tech stack
+
+| Layer     | Technology                                                    |
+| --------- | ------------------------------------------------------------- |
+| Frontend  | Next.js 15 (App Router), React 19, TypeScript, hand-written CSS |
+| API       | Python 3.12, FastAPI, Requests                                |
+| Data      | GitHub REST API v3                                            |
+| Tests     | pytest                                                        |
+| Hosting   | Vercel (Next.js build + Python serverless function)           |
+
+No database, no authentication, no state. Every analysis is a live read.
+
+---
+
+## Project structure
+
+```
+code-portfolio-evaluation-agent/
+├── app.py                    Streamlit app (original, unmodified)
+├── github_analyzer.py        original, unmodified — used by the Streamlit app
+├── scoring.py                original, unmodified — the score
+├── evaluator.py              original, unmodified — the insights
+├── requirements.txt          original, unmodified — Streamlit dependencies
 │
-├── app.py
-├── github_analyzer.py
-├── scoring.py
-├── evaluator.py
-├── requirements.txt
-├── .env
-├── README.md
+├── api/                      Python serverless function
+│   ├── index.py              FastAPI routes
+│   ├── _core.py              Streamlit shim + insight parsing
+│   ├── _github.py            URL parsing, fetching, error taxonomy, detection
+│   ├── _criteria.py          explainable breakdown + drift guard
+│   └── requirements.txt      API dependencies (no Streamlit)
 │
-└── assets
-    ├── agent_workflow.png
+├── src/
+│   ├── app/                  homepage, analyzer, global styles
+│   ├── components/           RepoInput, Analyzer, Results, ScoreCard
+│   └── lib/                  API client, types, rubric, local history
+│
+├── tests/                    pytest suite
+├── package.json  next.config.mjs  tsconfig.json  vercel.json
+└── .env.example
 ```
 
 ---
 
-## Installation
+## Running locally
 
-Clone the repository:
+Requires Node.js 20+ and Python 3.9+.
 
-```
-git clone https://github.com/YOUR_USERNAME/code-portfolio-evaluation-agent.git
+```bash
+git clone https://github.com/hetvidoshi22/code-portfolio-evaluation-agent.git
 cd code-portfolio-evaluation-agent
+
+npm install
+pip install -r requirements-dev.txt
+
+cp .env.example .env.local     # optional, but see GITHUB_TOKEN below
 ```
 
-Install dependencies:
+The API and the frontend run as two processes in development. In one terminal:
 
+```bash
+npm run dev:api        # FastAPI on http://127.0.0.1:8000
 ```
+
+In another:
+
+```bash
+npm run dev            # Next.js on http://localhost:3000
+```
+
+`next.config.mjs` proxies `/api/*` to the Python process in development, so open
+<http://localhost:3000> and everything works as one app.
+
+### Running the tests
+
+```bash
+npm test               # or: python -m pytest tests -q
+```
+
+### Running the Streamlit app
+
+The original prototype is untouched and still works:
+
+```bash
 pip install -r requirements.txt
-```
-
----
-
-## Run the Application
-
-Start the Streamlit app:
-
-```
 streamlit run app.py
 ```
 
-The app will open in your browser:
+---
 
-```
-http://localhost:8501
-```
+## Environment variables
+
+| Variable               | Required            | Purpose                                                        |
+| ---------------------- | ------------------- | -------------------------------------------------------------- |
+| `GITHUB_TOKEN`         | Strongly recommended | Raises GitHub's rate limit from 60 to 5,000 requests per hour  |
+| `NEXT_PUBLIC_SITE_URL` | No                  | Canonical URL for Open Graph tags; derived from Vercel if unset |
+
+**About `GITHUB_TOKEN`.** Without one, GitHub allows 60 requests per hour *per IP address*.
+On serverless hosting that IP is shared, so an unauthenticated deployment will rate-limit
+almost immediately. Create a token at <https://github.com/settings/tokens> with **no scopes
+selected** — reading public repository metadata requires no permissions at all.
+
+The token is read from the environment by `api/_github.py` only. It is never hardcoded and
+never reaches the browser.
 
 ---
 
-## Example Usage
+## Deployment (Vercel)
 
-Input:
+1. Push the repository to GitHub.
+2. In Vercel, **Add New → Project** and import the repository.
+3. Leave the framework preset as **Next.js** and the root directory as the repository root.
+   `vercel.json` already routes `/api/*` to the Python function.
+4. Under **Settings → Environment Variables**, add `GITHUB_TOKEN` for all environments.
+5. Deploy.
 
-```
-https://github.com/username/project
-```
+After the first deploy, check `https://<your-app>/api/health`. It should return
+`{"status":"ok","authenticated":true,...}` — if `authenticated` is `false`, the token was not
+picked up.
 
-Output:
+**One thing to verify on the first deploy.** Vercel installs Python dependencies from
+`requirements.txt`. `api/requirements.txt` exists so the function bundle does not install
+Streamlit and its ~200 MB of transitive dependencies from the root file. If the build log
+shows Streamlit being installed, the function still works correctly — the shim means it is
+never imported — but the bundle is larger than it needs to be.
 
-* Portfolio Score
-* Strengths of the repository
-* Improvement suggestions
+---
+
+## Limitations
+
+* **Public repositories only.** Private repositories cannot be analyzed.
+* **Root-level detection.** Signals are detected from the repository root, so a `tests/`
+  directory nested inside `src/` is not counted. This is deliberate: it prevents a vendored
+  dependency's test folder from earning points.
+* **Size is a proxy, not a measure of quality.** A 100 KB threshold rewards substance, but a
+  small, elegant library will score lower than a large, messy one.
+* **Community signals favour older repositories.** Stars and forks account for 15 points, so
+  a brand-new repository cannot reach the top tier however well-engineered it is.
+* **It does not read your code.** Nothing about correctness, architecture or style is
+  assessed.
+* **Rate limits apply.** Without a token, 60 requests/hour per IP.
+
+---
+
+## Privacy
+
+Analyses are live reads of GitHub's public API. Nothing is written to a database, there are
+no user accounts, and no analytics are collected. The last five repositories you analyze are
+stored in your own browser's `localStorage` so you can return to them; that list never leaves
+your device and can be cleared by clearing site data.
+
+---
+
+## License
+
+No license file is currently present in this repository. Add one to define how others may use
+this project — the analyzer will tell you the same thing.

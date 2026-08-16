@@ -1,0 +1,4 @@
+# Local development and testing only. Not installed on Vercel.
+-r api/requirements.txt
+pytest>=8.0
+uvicorn>=0.30

@@ -1,0 +1,29 @@
+{
+  "name": "code-portfolio-evaluation-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic quality scoring for public GitHub repositories.",
+  "scripts": {
+    "dev": "next dev",
+    "dev:api": "uvicorn api.index:app --reload --port 8000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "python -m pytest tests -q"
+  },
+  "dependencies": {
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

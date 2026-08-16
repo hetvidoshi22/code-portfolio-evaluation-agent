@@ -1,0 +1,8 @@
+# Dependencies for the Vercel Python serverless function only.
+#
+# Deliberately excludes streamlit: api/_core.py stubs it, so the ~200 MB of
+# pandas/numpy/pyarrow that streamlit pulls in is never needed in the function
+# bundle. The Streamlit app keeps using the root requirements.txt.
+fastapi>=0.115,<1.0
+pydantic>=2.9,<3.0
+requests>=2.31,<3.0
