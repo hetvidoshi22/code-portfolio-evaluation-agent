@@ -55,7 +55,7 @@ export default function RepoInput({
           placeholder="https://github.com/username/repository"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          aria-describedby="repo-url-hint"
+          aria-describedby={showExample ? "repo-url-hint" : undefined}
         />
         <button type="submit" className="btn btn-primary" disabled={busy || !value.trim()}>
           {busy ? "Analyzing…" : buttonLabel}

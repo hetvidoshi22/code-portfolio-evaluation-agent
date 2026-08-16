@@ -6,53 +6,66 @@ interface Props {
   verdict: Verdict;
   criteria: CriterionResult[];
   compact?: boolean;
+  /** Render only the breakdown table, for places that already show the score. */
+  breakdownOnly?: boolean;
 }
 
 /** Score headline, meter and per-criterion breakdown. Used for real results
  *  and for the sample card on the homepage. */
-export default function ScoreCard({ score, maxScore, verdict, criteria, compact }: Props) {
+export default function ScoreCard({
+  score,
+  maxScore,
+  verdict,
+  criteria,
+  compact,
+  breakdownOnly,
+}: Props) {
   const percent = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
   const earned = criteria.filter((c) => c.passed).length;
 
   return (
-    <div className="card stack stack-md">
-      <div className="score-head">
-        <div>
-          <p className="eyebrow">Portfolio score</p>
-          <p className="score-value">
-            <span className="n">{score}</span>
-            <span className="d">/ {maxScore}</span>
-          </p>
+    <div className={breakdownOnly ? "stack stack-md" : "card stack stack-md"}>
+      {!breakdownOnly && (
+        <div className="score-head">
+          <div>
+            <p className="eyebrow">Portfolio score</p>
+            <p className="score-value">
+              <span className="n">{score}</span>
+              <span className="d">/ {maxScore}</span>
+            </p>
+          </div>
+          <div className="stack stack-sm" style={{ alignItems: "flex-start" }}>
+            <span className={`verdict ${verdict.tier}`}>
+              <span className="dot" aria-hidden="true" />
+              {verdict.label}
+            </span>
+            <p className="small muted" style={{ maxWidth: "34ch" }}>
+              {verdict.message}
+            </p>
+          </div>
         </div>
-        <div className="stack stack-sm" style={{ alignItems: "flex-start" }}>
-          <span className={`verdict ${verdict.tier}`}>
-            <span className="dot" aria-hidden="true" />
-            {verdict.label}
-          </span>
-          <p className="small muted" style={{ maxWidth: "34ch" }}>
-            {verdict.message}
-          </p>
-        </div>
-      </div>
+      )}
 
-      <div>
-        <div
-          className="meter"
-          role="meter"
-          aria-valuenow={score}
-          aria-valuemin={0}
-          aria-valuemax={maxScore}
-          aria-label={`Portfolio score ${score} out of ${maxScore}`}
-        >
-          <span style={{ width: `${percent}%` }} />
+      {!breakdownOnly && (
+        <div>
+          <div
+            className="meter"
+            role="meter"
+            aria-valuenow={score}
+            aria-valuemin={0}
+            aria-valuemax={maxScore}
+            aria-label={`Portfolio score ${score} out of ${maxScore}`}
+          >
+            <span style={{ width: `${percent}%` }} />
+          </div>
+          <div className="meter-scale" aria-hidden="true">
+            <span>0</span>
+            <span>60 · good</span>
+            <span>80 · strong</span>
+            <span>{maxScore}</span>
+          </div>
         </div>
-        <div className="meter-scale" aria-hidden="true">
-          <span>0</span>
-          <span>60 · good</span>
-          <span>80 · strong</span>
-          <span>{maxScore}</span>
-        </div>
-      </div>
+      )}
 
       <div className="table-scroll">
         <table className="breakdown">

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Code Portfolio Evaluation Agent">
+  <title>Code Portfolio Evaluation Agent</title>
+  <rect width="64" height="64" rx="17" fill="#0a6e6a"/>
+  <text x="32" y="42" text-anchor="middle" fill="#ffffff"
+        font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+        font-size="30" font-weight="700" letter-spacing="-1.5">CP</text>
+</svg>

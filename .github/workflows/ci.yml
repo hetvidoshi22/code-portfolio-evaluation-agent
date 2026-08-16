@@ -31,4 +31,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
+      # Session state for multi-repository analysis: averages, capacity and the
+      # guarantee that one failed repository never drops a sibling's result.
+      - run: npm run test:web
       - run: npm run build

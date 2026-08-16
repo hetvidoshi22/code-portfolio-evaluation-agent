@@ -51,6 +51,26 @@ export async function analyzeRepository(
   return body as AnalysisResult;
 }
 
+/** Heading for an error code. One place, so every surface names a failure identically. */
+export function errorHeading(code: string): string {
+  switch (code) {
+    case "invalid_url":
+      return "That doesn't look like a repository URL";
+    case "not_found":
+      return "Repository not found";
+    case "private":
+      return "This repository is private";
+    case "rate_limited":
+      return "GitHub rate limit reached";
+    case "network":
+      return "Couldn't reach GitHub";
+    case "scoring_drift":
+      return "Scoring configuration error";
+    default:
+      return "Analysis failed";
+  }
+}
+
 // ─── Formatting ─────────────────────────────────────────────────────────────
 
 /** GitHub reports repository size in kilobytes. */

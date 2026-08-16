@@ -21,6 +21,8 @@ repository always produces the same score, and every point is traceable to a pub
 * Applies eight fixed scoring rules totalling exactly 100 points
 * Shows a per-criterion breakdown with the specific file or signal that was found or missing
 * Lists concrete strengths and improvement suggestions
+* Analyzes up to four repositories in one session, side by side, with a count, average and
+  highest score taken straight from those same per-repository scores
 * Handles invalid URLs, missing repositories, private repositories, rate limits and network
   failures with a specific message for each — and never produces a score from data it could
   not reliably retrieve
@@ -88,6 +90,13 @@ declaratively so it can be labelled and displayed, then checks its own total aga
 breakdown that does not add up. `tests/test_criteria.py` proves agreement across all 256
 signal combinations.
 
+**A session is client state, not a feature of the API.** Analyzing several repositories issues
+the same one-repository request per repository, through the same client, and keeps each result
+in React state for the current tab. The count, average and highest score are read off those
+authoritative results — no endpoint, no storage and no second scoring path exists. A repository
+that fails to analyze shows its own error and never removes a sibling's result or contributes a
+score to the average.
+
 **Streamlit is stubbed, not installed.** `github_analyzer.py` and `evaluator.py` import
 Streamlit only for `@st.cache_data`. `api/_core.py` registers a stub module before importing
 them, so the serverless bundle skips ~200 MB of pandas/numpy/pyarrow.
@@ -103,10 +112,11 @@ The original Streamlit app still runs unchanged — see *Running the Streamlit a
 | Frontend  | Next.js 15 (App Router), React 19, TypeScript, hand-written CSS |
 | API       | Python 3.12, FastAPI, Requests                                |
 | Data      | GitHub REST API v3                                            |
-| Tests     | pytest                                                        |
+| Tests     | pytest (scoring and API), Vitest (session state)              |
 | Hosting   | Vercel (Next.js build + Python serverless function)           |
 
-No database, no authentication, no state. Every analysis is a live read.
+No database, no authentication, no server-side state. Every analysis is a live read, and a
+multi-repository session lives only in the browser tab that created it.
 
 ---
 
@@ -128,12 +138,14 @@ code-portfolio-evaluation-agent/
 │   └── requirements.txt      API dependencies (no Streamlit)
 │
 ├── src/
-│   ├── app/                  homepage, analyzer, global styles
-│   ├── components/           RepoInput, Analyzer, Results, ScoreCard
-│   └── lib/                  API client, types, rubric, local history
+│   ├── app/                  homepage, analyzer, global styles, icons
+│   ├── components/           RepoInput, Analyzer, Results, ScoreCard,
+│   │                         RepoResultCard, SessionSummary
+│   └── lib/                  API client, types, rubric, local history,
+│                             multi-repository session state
 │
 ├── tests/                    pytest suite
-├── package.json  next.config.mjs  tsconfig.json  vercel.json
+├── package.json  next.config.mjs  tsconfig.json  vercel.json  vitest.config.mts
 └── .env.example
 ```
 
@@ -171,7 +183,8 @@ npm run dev            # Next.js on http://localhost:3000
 ### Running the tests
 
 ```bash
-npm test               # or: python -m pytest tests -q
+npm test               # pytest: scoring, detection, breakdown, rubric sync
+npm run test:web       # vitest: multi-repository session state and result cards
 ```
 
 ### Running the Streamlit app
@@ -214,6 +227,9 @@ never reaches the browser.
   a brand-new repository cannot reach the top tier however well-engineered it is.
 * **It does not read your code.** Nothing about correctness, architecture or style is
   assessed.
+* **Four repositories per session.** A deliberate cap, since each one is a live GitHub read.
+  Session results are held in the tab and are lost on reload — the URL reproduces the first
+  repository only.
 * **Rate limits apply.** Without a token, 60 requests/hour per IP.
 
 ---

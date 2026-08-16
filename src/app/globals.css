@@ -922,6 +922,190 @@ table.breakdown tr.total td {
   font-weight: 600;
 }
 
+/* ─── Multi-repository session ────────────────────────────────────────────── */
+
+.summary-facts .fact dd {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.summary-facts .fact dd .muted {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Three across on desktop, two on tablet, one on mobile — the track minimum
+   does the work, so there is no breakpoint to keep in sync. */
+.repo-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+}
+
+.repo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.repo-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.repo-card-index {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.repo-card-name {
+  font-size: 1.12rem;
+  overflow-wrap: anywhere;
+}
+.repo-card-owner {
+  font-family: var(--mono);
+  font-size: 0.79rem;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.repo-card-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.repo-card .score-value .n {
+  font-size: 2.5rem;
+}
+.repo-card .meter {
+  margin-top: 0;
+}
+
+.repo-card-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.repo-card-meta > div {
+  min-width: 0;
+}
+.repo-card-meta dt {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.repo-card-meta dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 560;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.repo-card-insights,
+.repo-card-insights li {
+  font-size: 0.87rem;
+}
+.repo-card-insights {
+  gap: 0.4rem;
+}
+
+.repo-card-pending {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.repo-details {
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+}
+.repo-details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 560;
+  color: var(--brand);
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.repo-details summary::-webkit-details-marker {
+  display: none;
+}
+.repo-details summary::after {
+  content: "+";
+  font-family: var(--mono);
+}
+.repo-details[open] summary::after {
+  content: "\2212";
+}
+.repo-details > .stack {
+  margin-top: 0.7rem;
+}
+/* The breakdown is already inside a card — let it use the full card width. */
+.repo-card table.breakdown {
+  min-width: 0;
+}
+.repo-card table.breakdown th,
+.repo-card table.breakdown td {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.82rem;
+}
+.repo-card table.breakdown th:first-child,
+.repo-card table.breakdown td:first-child {
+  padding-left: 0;
+}
+.repo-card table.breakdown th:last-child,
+.repo-card table.breakdown td:last-child {
+  padding-right: 0;
+}
+
+.repo-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.15rem;
+}
+.repo-card-foot .btn {
+  flex: 1 1 auto;
+}
+
+.repo-card.is-error {
+  border-color: color-mix(in srgb, var(--fail) 35%, var(--line));
+  background: var(--fail-wash);
+}
+.repo-card.is-error .repo-card-name {
+  color: var(--fail);
+}
+
+.add-panel {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.1rem;
+}
+
+.notice {
+  color: var(--warn);
+}
+
 /* ─── Utilities ───────────────────────────────────────────────────────────── */
 
 .stack {

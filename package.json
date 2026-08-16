@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "python -m pytest tests -q"
+    "test": "python -m pytest tests -q",
+    "test:web": "vitest run"
   },
   "dependencies": {
     "next": "^15.3.0",
@@ -21,7 +22,9 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "jsdom": "^30.0.1",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=20"

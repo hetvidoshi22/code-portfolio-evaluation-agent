@@ -15,10 +15,12 @@ import type { AnalysisResult } from "@/lib/types";
 
 interface Props {
   result: AnalysisResult;
-  onReset: () => void;
+  /** Add a second repository to the session, keeping this result on screen. */
+  onAnalyzeAnother: () => void;
+  onStartOver: () => void;
 }
 
-export default function Results({ result, onReset }: Props) {
+export default function Results({ result, onAnalyzeAnother, onStartOver }: Props) {
   const { repository, insights } = result;
   const [copied, setCopied] = useState<"link" | "summary" | null>(null);
 
@@ -159,8 +161,11 @@ export default function Results({ result, onReset }: Props) {
       </div>
 
       <div className="row no-print">
-        <button type="button" className="btn btn-primary" onClick={onReset}>
+        <button type="button" className="btn btn-primary" onClick={onAnalyzeAnother}>
           Analyze Another Repository
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onStartOver}>
+          Start over
         </button>
       </div>
     </div>

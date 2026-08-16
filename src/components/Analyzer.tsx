@@ -1,87 +1,167 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import RepoInput from "@/components/RepoInput";
+import RepoResultCard from "@/components/RepoResultCard";
 import Results from "@/components/Results";
-import { AnalysisFailure, analyzeRepository } from "@/lib/client";
+import SessionSummary from "@/components/SessionSummary";
+import { AnalysisFailure, analyzeRepository, errorHeading } from "@/lib/client";
 import { readRecent, rememberRecent, type RecentEntry } from "@/lib/history";
-import type { AnalysisResult } from "@/lib/types";
+import {
+  MAX_REPOSITORIES,
+  canAddRepository,
+  createSlot,
+  createSlotId,
+  dropSlot,
+  findDuplicate,
+  markDone,
+  markFailed,
+  markLoading,
+  remainingCapacity,
+  summarize,
+  type RepoSlot,
+} from "@/lib/session";
 
-type Status = "idle" | "loading" | "done" | "error";
-
-interface FailureState {
-  code: string;
-  message: string;
-}
+const UNEXPECTED =
+  "Something unexpected happened while analyzing this repository. Please try again shortly.";
 
 export default function Analyzer() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlParam = searchParams.get("url") ?? "";
 
-  const [status, setStatus] = useState<Status>("idle");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [failure, setFailure] = useState<FailureState | null>(null);
+  const [slots, setSlots] = useState<RepoSlot[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentEntry[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
+  const controllers = useRef(new Map<string, AbortController>());
 
   useEffect(() => {
     setRecent(readRecent());
   }, []);
 
-  const run = useCallback(async (url: string) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const abortAll = useCallback(() => {
+    for (const controller of controllers.current.values()) controller.abort();
+    controllers.current.clear();
+  }, []);
 
-    setStatus("loading");
-    setFailure(null);
-    setResult(null);
+  /** One request per slot, through the same client and API every analysis uses.
+   *  Success and failure are written to that slot alone. */
+  const runSlot = useCallback(async (slotId: string, url: string) => {
+    controllers.current.get(slotId)?.abort();
+    const controller = new AbortController();
+    controllers.current.set(slotId, controller);
+
+    setSlots((prev) => markLoading(prev, slotId));
 
     try {
       const analysis = await analyzeRepository(url, controller.signal);
       if (controller.signal.aborted) return;
-      setResult(analysis);
-      setStatus("done");
+      setSlots((prev) => markDone(prev, slotId, analysis));
       setRecent(rememberRecent(analysis.repository.fullName, analysis.score));
     } catch (error) {
       if (controller.signal.aborted || (error as Error)?.name === "AbortError") return;
       const failed = error as AnalysisFailure;
-      setFailure({
-        code: failed.code ?? "unexpected",
-        message:
-          failed.message ||
-          "Something unexpected happened while analyzing this repository. Please try again shortly.",
-      });
-      setStatus("error");
+      setSlots((prev) =>
+        markFailed(prev, slotId, {
+          code: failed.code ?? "unexpected",
+          message: failed.message || UNEXPECTED,
+        }),
+      );
+    } finally {
+      if (controllers.current.get(slotId) === controller) controllers.current.delete(slotId);
     }
   }, []);
 
-  // The URL is the source of truth, so a shared link reproduces the analysis.
+  // The URL is the source of truth for the first repository, so a shared link
+  // reproduces that analysis exactly as it always has. Repositories added
+  // afterwards live only in this session and deliberately do not touch the URL.
   useEffect(() => {
+    abortAll();
+    setAdding(false);
+    setNotice(null);
+
     if (!urlParam) {
-      setStatus("idle");
-      setResult(null);
-      setFailure(null);
+      setSlots([]);
       return;
     }
-    void run(urlParam);
-    return () => abortRef.current?.abort();
-  }, [urlParam, run]);
+
+    const slot = createSlot(createSlotId(), urlParam);
+    setSlots([slot]);
+    void runSlot(slot.id, urlParam);
+
+    return () => abortAll();
+  }, [urlParam, runSlot, abortAll]);
+
+  const summary = useMemo(() => summarize(slots), [slots]);
 
   function submit(url: string) {
     router.push(`/analyze?url=${encodeURIComponent(url)}`);
   }
 
-  function reset() {
+  function startOver() {
+    abortAll();
+    setSlots([]);
+    setAdding(false);
+    setNotice(null);
     router.push("/analyze");
   }
 
+  function addRepository(url: string) {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+
+    if (!canAddRepository(slots)) {
+      setNotice(
+        `This session is limited to ${MAX_REPOSITORIES} repositories. Clear the results to start a new one.`,
+      );
+      return;
+    }
+
+    const duplicate = findDuplicate(slots, trimmed);
+    if (duplicate) {
+      // Already analyzed — say so rather than spend another GitHub request.
+      setNotice("That repository is already in this session.");
+      return;
+    }
+
+    const slot = createSlot(createSlotId(), trimmed);
+    setSlots((prev) => [...prev, slot]);
+    setAdding(false);
+    setNotice(null);
+    void runSlot(slot.id, trimmed);
+  }
+
+  function retry(slot: RepoSlot) {
+    void runSlot(slot.id, slot.url);
+  }
+
+  function remove(slot: RepoSlot) {
+    if (slots.length <= 1) {
+      startOver();
+      return;
+    }
+    controllers.current.get(slot.id)?.abort();
+    controllers.current.delete(slot.id);
+    setSlots((prev) => dropSlot(prev, slot.id));
+    setNotice(null);
+  }
+
+  const first = slots[0];
+  const single = slots.length === 1;
+  const multi = slots.length > 1;
+  const atLimit = !canAddRepository(slots);
+
+  // Unchanged single-repository flow: the intro and the main input stay visible
+  // until a result arrives, exactly as before.
+  const showIntro = slots.length === 0 || (single && first.status !== "done");
+  const showAddPanel = multi || (single && first.status === "done");
+
   return (
     <div className="wrap section stack stack-lg">
-      {status !== "done" && (
+      {showIntro && (
         <header className="stack stack-sm">
           <p className="eyebrow">Analyzer</p>
           <h1 style={{ fontSize: "clamp(1.7rem, 4vw, 2.3rem)" }}>Analyze a repository</h1>
@@ -92,18 +172,18 @@ export default function Analyzer() {
         </header>
       )}
 
-      {status !== "done" && (
+      {showIntro && (
         <div style={{ maxWidth: "36rem" }}>
           <RepoInput
             initialValue={urlParam}
-            busy={status === "loading"}
+            busy={single && first.status === "loading"}
             onSubmit={submit}
             autoFocus={!urlParam}
           />
         </div>
       )}
 
-      {status === "idle" && recent.length > 0 && (
+      {slots.length === 0 && recent.length > 0 && (
         <section className="stack stack-sm">
           <p className="eyebrow">Recent on this device</p>
           <div className="recent">
@@ -125,7 +205,7 @@ export default function Analyzer() {
         </section>
       )}
 
-      {status === "loading" && (
+      {single && first.status === "loading" && (
         <div className="state" aria-live="polite">
           <div className="spinner" role="status" aria-label="Analyzing" />
           <h3>Analyzing repository…</h3>
@@ -133,46 +213,106 @@ export default function Analyzer() {
         </div>
       )}
 
-      {status === "error" && failure && (
+      {single && first.status === "error" && first.failure && (
         <div className="state error" role="alert">
-          <h3>{errorHeading(failure.code)}</h3>
-          <p>{failure.message}</p>
+          <h3>{errorHeading(first.failure.code)}</h3>
+          <p>{first.failure.message}</p>
           <div className="row" style={{ marginTop: "0.5rem" }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => urlParam && void run(urlParam)}
-              disabled={!urlParam}
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => retry(first)}>
               Try again
             </button>
-            <button type="button" className="btn btn-ghost" onClick={reset}>
+            <button type="button" className="btn btn-ghost" onClick={startOver}>
               Start over
             </button>
           </div>
         </div>
       )}
 
-      {status === "done" && result && <Results result={result} onReset={reset} />}
+      {single && first.status === "done" && first.result && (
+        <Results
+          result={first.result}
+          onAnalyzeAnother={() => setAdding(true)}
+          onStartOver={startOver}
+        />
+      )}
+
+      {multi && (
+        <>
+          <header className="stack stack-sm">
+            <p className="eyebrow">Session results</p>
+            <h1 style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)" }}>
+              {slots.length} repositories in this session
+            </h1>
+          </header>
+
+          {summary && <SessionSummary summary={summary} />}
+
+          <div className="repo-grid">
+            {slots.map((slot, index) => (
+              <RepoResultCard
+                key={slot.id}
+                slot={slot}
+                index={index}
+                onRetry={retry}
+                onRemove={remove}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {showAddPanel && (adding || multi) && (
+        <section className="stack stack-md no-print">
+          {adding ? (
+            <div className="add-panel stack stack-sm">
+              <p className="eyebrow">Add a repository</p>
+              <RepoInput buttonLabel="Analyze" onSubmit={addRepository} showExample={false} autoFocus />
+              <div className="row">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    setAdding(false);
+                    setNotice(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <span className="small muted">
+                  {remainingCapacity(slots)} of {MAX_REPOSITORIES} slots left in this session.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="row">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setAdding(true)}
+                disabled={atLimit}
+              >
+                Analyze Another Repository
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={startOver}>
+                Clear Results
+              </button>
+            </div>
+          )}
+
+          {notice && (
+            <p className="small notice" role="status">
+              {notice}
+            </p>
+          )}
+
+          {atLimit && !adding && (
+            <p className="small muted">
+              Session limit reached. {MAX_REPOSITORIES} repositories per session keeps GitHub API
+              use low — clear the results to start a new session.
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
-}
-
-function errorHeading(code: string): string {
-  switch (code) {
-    case "invalid_url":
-      return "That doesn't look like a repository URL";
-    case "not_found":
-      return "Repository not found";
-    case "private":
-      return "This repository is private";
-    case "rate_limited":
-      return "GitHub rate limit reached";
-    case "network":
-      return "Couldn't reach GitHub";
-    case "scoring_drift":
-      return "Scoring configuration error";
-    default:
-      return "Analysis failed";
-  }
 }
